@@ -54,7 +54,7 @@ int nwSpeed = 0;
 float xPos = 0;
 float yPos = 0;
 
-//Distance from sensor to the ground at launch site, 
+//Distance from sensor to the ground, 
 //not the drone legs
 float zPos = 0;
 float ground = 0;
@@ -77,10 +77,10 @@ void setSpeed(int speed){
 
 
 void setup() {
-  firstESC.attach(11);    // attached to pin 11
-  secondESC.attach(10);
-  thirdESC.attach(9);
-  fourthESC.attach(6);
+  neMotor.attach(11);    // attached to pin 11
+  seMotor.attach(10);
+  swMotor.attach(9);
+  nwMotor.attach(6);
   arm();
 
   pinMode(bottom.pingPin, OUTPUT);
@@ -105,43 +105,7 @@ void setup() {
 }
 
 inline bool within(float value, float target, float margin){
-  return target - value >= -margin && target - value <= margin
-}
-
-//The goal of this function is to take the live data and 
-//proportionally change the power to each motor depending on the
-//gyroscope's readings so that the readings will become closer to 0
-//Assumes that the drone is already in the air
-void hover(float targetRotation, float targetZ, int duration){
-  long startTime = millis();
-  int totalTime = 0;
-  bool correctPos = false;
-
-  //Exit the loop after the drone has hovered 
-  //in the correct position for the duration
-  while(correctPos && totalTime + millis() - startTime <= duration){
-    zPos = scanAverage(bottom) - ground;
-    Serial.print("cm from ground: ");Serial.println(zPos);
-    Serial.print("Time: ");
-    if(correctPos){
-      Serial.println(totalTime + millis() - startTime);
-    }else{
-      Serial.print(totalTime);Serial.println("\tRe-acquiring position");
-    }
-
-    
-    if(!correctPos && within(zPos, targetZ, 2)){
-      correctPos = true;
-      startTime = millis();
-    }
-    else if(correctPos && !within(zPos, targetZ, 2)){
-      correctPos = false;
-      totalTime += millis() - startTime;
-    }
-
-    if(!correctPos) moveTo(0, 0, targetZ, true, targetRotation);
-  }
-  
+  return target - value >= -margin && target - value <= margin;
 }
 
 
@@ -238,20 +202,60 @@ void moveTo(float targetX, float targetY, float targetZ, bool halt, float target
   
     //Write the speed to each motor individually
     writeSpeeds(new_neSpeed, new_seSpeed, new_swSpeed, new_nwSpeed);
-    Serial.print("NW: ";Serial.print(new_nwSpeed);
-    Serial.print("\tNE: ";Serial.println(new_neSpeed);
-    Serial.print("SW: ";Serial.print(new_swSpeed);
-    Serial.print("\tSE: ";Serial.println(new_seSpeed);
+    Serial.print("NW: ");Serial.print(new_nwSpeed);
+    Serial.print("\tNE: ");Serial.println(new_neSpeed);
+    Serial.print("SW: ");Serial.print(new_swSpeed);
+    Serial.print("\tSE: ");Serial.println(new_seSpeed);
   }while(!(dSpeedX == 0 && dSpeedY == 0 && dSpeedZ == 0 && dRotation == 0));
   
 }
 
+//The goal of this function is to take the live data and 
+//proportionally change the power to each motor depending on the
+//gyroscope's readings so that the readings will become closer to 0
+//Assumes that the drone is already in the air
+void hover(float targetRotation, float targetZ, int duration){
+  long startTime = millis();
+  int totalTime = 0;
+  bool correctPos = false;
+
+  //Exit the loop after the drone has hovered 
+  //in the correct position for the duration
+  while(correctPos && totalTime + millis() - startTime <= duration){
+    zPos = scanAverage(bottom) - ground;
+    Serial.print("cm from ground: ");Serial.println(zPos);
+    Serial.print("Time: ");
+    if(correctPos){
+      Serial.println(totalTime + millis() - startTime);
+    }else{
+      Serial.print(totalTime);Serial.println("\tRe-acquiring position");
+    }
+
+    
+    if(!correctPos && within(zPos, targetZ, 2)){
+      correctPos = true;
+      startTime = millis();
+    }
+    else if(correctPos && !within(zPos, targetZ, 2)){
+      correctPos = false;
+      totalTime += millis() - startTime;
+    }
+
+    if(!correctPos){
+      moveTo(0, 0, targetZ, true, targetRotation);
+    }
+  }
+  
+}
+
+
+
 //Write individual speeds to motors in clockwise order
 void writeSpeeds(int ne, int se, int sw, int nw){
-  neAngle = map(ne, 0, 100, 0, 180);
-  seAngle = map(se, 0, 100, 0, 180);
-  swAngle = map(sw, 0, 100, 0, 180);
-  nwAngle = map(nw, 0, 100, 0, 180);
+  int neAngle = map(ne, 0, 100, 0, 180);
+  int seAngle = map(se, 0, 100, 0, 180);
+  int swAngle = map(sw, 0, 100, 0, 180);
+  int nwAngle = map(nw, 0, 100, 0, 180);
   neMotor.write(neAngle);
   seMotor.write(seAngle);
   swMotor.write(swAngle);

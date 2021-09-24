@@ -107,9 +107,8 @@ void updatePos(){
   vPast = v;
 
   //Calculate position
-  float cosine = cos(orientation.rotation * PI / 180.0);
-  xPos += x*cosine;
-  yPos += y*cosine;
+  xPos += x*cos(orientation.rotation * PI / 180.0) + y*cos((orientation.rotation+90) * PI / 180.0);
+  yPos += x*sin(orientation.rotation * PI / 180.0) + y*sin((orientation.rotation+90) * PI / 180.0);
   zPos += z;
 
   Serial.print("x: ");Serial.println(v.x);
